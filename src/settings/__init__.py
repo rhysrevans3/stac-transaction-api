@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING, Annotated, Any, Literal, Union
+from typing import TYPE_CHECKING, Any, Literal, Union
 
 from pydantic import Field, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -64,10 +64,9 @@ class Settings(BaseSettings):
     )
 
     authorizer: Literal["egi", "globus"]
-    client: Annotated[
-        Union["CEDAClientSettings", "GlobusClientSettings"],
-        Field(discriminator="client_type"),
-    ]
+    client: Union["CEDAClientSettings", "GlobusClientSettings"] = Field(
+        discriminator="client_type"
+    )
 
     debug: bool = False
 
@@ -98,12 +97,16 @@ class Settings(BaseSettings):
         return data
 
 
-from src.settings import ceda, globus
+import importlib  # pylint: disable=wrong-import-position
 
 Settings.model_rebuild(
     _types_namespace={
-        "CEDAClientSettings": ceda.CEDAClientSettings,
-        "OtherClientSettings": globus.GlobusClientSettings,
+        "CEDAClientSettings": importlib.import_module(
+            "src.settings.ceda"
+        ).CEDAClientSettings,
+        "OtherClientSettings": importlib.import_module(
+            "src.settings.globus"
+        ).GlobusClientSettings,
     }
 )
 settings = Settings()
