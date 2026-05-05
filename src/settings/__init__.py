@@ -1,12 +1,7 @@
-from typing import TYPE_CHECKING, Any, Literal
+from typing import Any, Literal
 
 from pydantic import model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
-
-# ✅ Imports ONLY for static typing
-if TYPE_CHECKING:
-    from src.settings.ceda import CEDAClientSettings
-    from src.settings.globus import GlobusClientSettings
 
 DEFAULT_EXTENSIONS = {
     "CMIP6": {
