@@ -98,12 +98,12 @@ class Settings(BaseSettings):
         return data
 
 
-from src import settings
+from src.settings import ceda, globus
 
 Settings.model_rebuild(
     _types_namespace={
-        "CEDAClientSettings": settings.ceda.CEDAClientSettings,
-        "OtherClientSettings": settings.globus.GlobusClientSettings,
+        "CEDAClientSettings": ceda.CEDAClientSettings,
+        "OtherClientSettings": globus.GlobusClientSettings,
     }
 )
 settings = Settings()
