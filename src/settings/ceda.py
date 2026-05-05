@@ -1,10 +1,14 @@
-from pydantic import BaseModel
+from typing import Literal
+
+from pydantic import BaseModel, Field
 
 
 class CEDAClientSettings(BaseModel):
     """
     CEDA settings
     """
+
+    client_type: Literal["egi"] = Field("egi", frozen=True)
 
     client_id: str
     client_secret: str

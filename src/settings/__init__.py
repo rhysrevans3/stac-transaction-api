@@ -1,12 +1,12 @@
-import os
-from typing import Literal
+from typing import TYPE_CHECKING, Annotated, Any, Literal, Union
 
+from pydantic import Field, field_validator, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
-if os.environ.get("TRANSACTION_AUTHORIZER") == "egi":
-    from src.settings.ceda import CEDAClientSettings as ClientSettings
-else:
-    from src.settings.globus import GlobusClientSettings as ClientSettings
+# ✅ Imports ONLY for static typing
+if TYPE_CHECKING:
+    from src.settings.ceda import CEDAClientSettings
+    from src.settings.globus import GlobusClientSettings
 
 DEFAULT_EXTENSIONS = {
     "CMIP6": {
@@ -64,9 +64,38 @@ class Settings(BaseSettings):
     )
 
     authorizer: Literal["egi", "globus"]
-    client: ClientSettings
+    client: Annotated[
+        Union["CEDAClientSettings", "GlobusClientSettings"],
+        Field(discriminator="client_type"),
+    ]
 
     debug: bool = False
+
+    @model_validator(mode="before")
+    @classmethod
+    def load_client_config(cls, data: Any) -> Any:
+        """
+        Lazily import only the selected config model
+        based on the discriminator.
+        """
+        if isinstance(data, dict):
+            match data.get("authorizer"):
+                case "egi":
+                    from src.settings.ceda import (
+                        CEDAClientSettings as ClientSettings,
+                    )  # pylint: disable=import-outside-toplevel
+
+                case "globus":
+                    from src.settings.globus import (
+                        GlobusClientSettings as ClientSettings,
+                    )  # pylint: disable=import-outside-toplevel
+
+                case other:
+                    raise ValueError(f"Unknown authorizer: {other}")
+
+            data["client"] = ClientSettings.model_validate(data["client"])
+
+        return data
 
 
 settings = Settings()

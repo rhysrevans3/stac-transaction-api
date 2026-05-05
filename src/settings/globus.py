@@ -1,16 +1,18 @@
 import json
-from typing import Any, Self
+from typing import Any, Literal, Self
 
 import boto3
 import urllib3
 from globus_sdk import ConfidentialAppAuthClient
-from pydantic import BaseModel, model_validator
+from pydantic import BaseModel, Field, model_validator
 
 
 class GlobusClientSettings(BaseModel):
     """
     Globus settings
     """
+
+    client_type: Literal["globus"] = Field("globus", frozen=True)
 
     client_id: str
     client_secret: str
