@@ -1,6 +1,6 @@
 from typing import Annotated, Any, Literal
 
-from pydantic import field_validator, model_validator
+from pydantic import ValidationInfo, field_validator, model_validator
 from pydantic_settings import BaseSettings, NoDecode, SettingsConfigDict
 
 DEFAULT_EXTENSIONS = {
@@ -65,13 +65,17 @@ class Settings(BaseSettings):
 
     @field_validator("client", mode="before")
     @classmethod
-    def load_client_config(cls, data: Any) -> Any:
+    def load_client_config(
+        cls,
+        value: Any,
+        info: ValidationInfo,
+    ) -> Any:
         """
         Lazily import only the selected config model
         based on the discriminator.
         """
-        if isinstance(data, dict):
-            match data.get("authorizer"):
+        if isinstance(value, dict):
+            match info.data.get("backend"):
                 case "egi":
                     from src.settings.ceda import (
                         CEDAClientSettings as ClientSettings,
@@ -85,9 +89,9 @@ class Settings(BaseSettings):
                 case other:
                     raise ValueError(f"Unknown authorizer: {other}")
 
-            data["client"] = ClientSettings.model_validate(data["client"])
+            return ClientSettings.model_validate(value)
 
-        return data
+        return value
 
 
 settings = Settings()
