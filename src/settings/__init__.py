@@ -1,7 +1,7 @@
-from typing import Annotated, Any, Literal
+from typing import Any, Literal
 
 from pydantic import ValidationInfo, field_validator
-from pydantic_settings import BaseSettings, NoDecode, SettingsConfigDict
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
 DEFAULT_EXTENSIONS = {
     "CMIP6": {
@@ -59,7 +59,7 @@ class Settings(BaseSettings):
     )
 
     authorizer: Literal["egi", "globus"]
-    client: Annotated[Any, NoDecode]
+    client: Any
 
     debug: bool = False
 
