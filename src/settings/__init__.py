@@ -1,6 +1,6 @@
 from typing import Annotated, Any, Literal
 
-from pydantic import ValidationInfo, field_validator, model_validator
+from pydantic import ValidationInfo, field_validator
 from pydantic_settings import BaseSettings, NoDecode, SettingsConfigDict
 
 DEFAULT_EXTENSIONS = {
