@@ -98,4 +98,5 @@ class Settings(BaseSettings):
         return data
 
 
+Settings.model_rebuild()
 settings = Settings()
