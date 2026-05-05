@@ -1,6 +1,6 @@
 from typing import TYPE_CHECKING, Annotated, Any, Literal, Union
 
-from pydantic import Field, field_validator, model_validator
+from pydantic import Field, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 # ✅ Imports ONLY for static typing
@@ -98,5 +98,12 @@ class Settings(BaseSettings):
         return data
 
 
-Settings.model_rebuild()
+from src import settings
+
+Settings.model_rebuild(
+    _types_namespace={
+        "CEDAClientSettings": settings.ceda.CEDAClientSettings,
+        "OtherClientSettings": settings.globus.GlobusClientSettings,
+    }
+)
 settings = Settings()
