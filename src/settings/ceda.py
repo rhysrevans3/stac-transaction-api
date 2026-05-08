@@ -17,5 +17,5 @@ class CEDAClientSettings(BaseModel):
         "https://aai.egi.eu/auth/realms/egi/protocol/openid-connect/token/introspect"
     )
     regex: str = (
-        r"urn\:mace\:egi\.eu\:group\:esgf.vo.egi.eu\:(?P<type>.*)\:(?P<id>.*)\:role=(?P<role>.*)#aai.egi.eu"
+        r"urn\:mace\:egi\.eu\:group\:esgf.vo.egi.eu\:(?P<type>[^:]*)\:(?P<id>[^:]*)(\:institution\:(?P<institution>[^:]*))?\:role=(?P<role>[^:]*)#aai\.egi\.eu"
     )
