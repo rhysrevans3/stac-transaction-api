@@ -75,7 +75,7 @@ class Settings(BaseSettings):
         based on the discriminator.
         """
         if isinstance(value, dict):
-            match info.data.get("backend"):
+            match info.data.get("authorizer"):
                 case "egi":
                     from src.settings.ceda import (
                         CEDAClientSettings as ClientSettings,
