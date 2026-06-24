@@ -1,12 +1,13 @@
 import os
+import re
 from typing import Literal
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 if os.environ.get("TRANSACTION_AUTHORIZER") == "egi":
-    from src.settings.ceda import CEDAClientSettings as ClientSettings
+    from settings.ceda import CEDAClientSettings as ClientSettings
 else:
-    from src.settings.globus import GlobusClientSettings as ClientSettings
+    from settings.globus import GlobusClientSettings as ClientSettings
 
 DEFAULT_EXTENSIONS = {
     "CMIP6": {
@@ -29,12 +30,12 @@ DEFAULT_EXTENSIONS = {
             "default": "https://stac-extensions.github.io/file/v2.1.0/schema.json",
         },
     },
-    "CMIP6PLUS": {
-        "CMIP6PLUS": {
+    "CMIP6Plus": {
+        "CMIP6Plus": {
             "regex": [
                 r"https:\/\/esgf\.github\.io\/stac-transaction-api\/cmip6plus\/v[0-9]\.[0-9]\.[0-9]/schema\.json"
             ],
-            "default": "https://esgf.github.io/stac-transaction-api/cmip6plus/v1.0.1/schema.json",
+            "default": "https://esgf.github.io/stac-transaction-api/cmip6plus/v1.0.4/schema.json",
         },
         "alternate_assets": {
             "regex": [
@@ -52,9 +53,9 @@ DEFAULT_EXTENSIONS = {
     "CMIP7": {
         "CMIP7": {
             "regex": [
-                r"https:\/\/stac-extensions\.github\.io\/cmip7\/v[0-9]\.[0-9]\.[0-9]\/schema\.json"
+                r"https:\/\/esgf\.github\.io\/stac-transaction-api\/cmip7\/v[0-9]\.[0-9]\.[0-9]\/schema\.json"
             ],
-            "default": "https://stac-extensions.github.io/cmip7/v3.0.6/schema.json",
+            "default": "https://esgf.github.io/stac-transaction-api/cmip7/v1.0.0/schema.json",
         },
         "alternate_assets": {
             "regex": [
@@ -89,52 +90,12 @@ DEFAULT_EXTENSIONS = {
             "default": "https://stac-extensions.github.io/file/v2.1.0/schema.json",
         },
     },
-    "INPUT4MIPS": {
-        "INPUT4MIPS": {
+    "obs4MIPs": {
+        "obs4MIPs": {
             "regex": [
-                r"https:\/\/stac-extensions\.github\.io\/input4mips\/v[0-9]\.[0-9]\.[0-9]\/schema\.json"
+                r"https:\/\/esgf\.github\.io\/stac-transaction-api\/obs4mips\/v[0-9]\.[0-9]\.[0-9]/schema\.json"
             ],
-            "default": "https://stac-extensions.github.io/input4mips/v3.0.0/schema.json",
-        },
-        "alternate_assets": {
-            "regex": [
-                r"https:\/\/stac-extensions\.github\.io\/alternate-assets\/v[0-9]\.[0-9]\.[0-9]\/schema\.json"
-            ],
-            "default": "https://stac-extensions.github.io/alternate-assets/v1.2.0/schema.json",
-        },
-        "file": {
-            "regex": [
-                r"https:\/\/stac-extensions\.github\.io\/file\/v[0-9]\.[0-9]\.[0-9]/schema\.json"
-            ],
-            "default": "https://stac-extensions.github.io/file/v2.1.0/schema.json",
-        },
-    },
-    "OBS4MIPS": {
-        "OBS4MIPS": {
-            "regex": [
-                r"https:\/\/stac-extensions\.github\.io\/obs4mips\/v[0-9]\.[0-9]\.[0-9]\/schema\.json"
-            ],
-            "default": "https://stac-extensions.github.io/obs4mips/v1.0.0/schema.json",
-        },
-        "alternate_assets": {
-            "regex": [
-                r"https:\/\/stac-extensions\.github\.io\/alternate-assets\/v[0-9]\.[0-9]\.[0-9]\/schema\.json"
-            ],
-            "default": "https://stac-extensions.github.io/alternate-assets/v1.2.0/schema.json",
-        },
-        "file": {
-            "regex": [
-                r"https:\/\/stac-extensions\.github\.io\/file\/v[0-9]\.[0-9]\.[0-9]/schema\.json"
-            ],
-            "default": "https://stac-extensions.github.io/file/v2.1.0/schema.json",
-        },
-    },
-    "OBS4REF": {
-        "OBS4REF": {
-            "regex": [
-                r"https:\/\/stac-extensions\.github\.io\/obs4ref\/v[0-9]\.[0-9]\.[0-9]\/schema\.json"
-            ],
-            "default": "https://stac-extensions.github.io/obs4ref/v1.0.1/schema.json",
+            "default": "https://esgf.github.io/stac-transaction-api/obs4mips/v1.0.0/schema.json",
         },
         "alternate_assets": {
             "regex": [
@@ -151,6 +112,16 @@ DEFAULT_EXTENSIONS = {
     },
 }
 
+VERSION_REGEX = re.compile(
+    r"/v("
+    r"(?P<major>0|[1-9]\d*)\."
+    r"(?P<minor>0|[1-9]\d*)\."
+    r"(?P<patch>0|[1-9]\d*)"
+    r"(?:-[0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*)?"
+    r"(?:\+[0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*)?"
+    r")/"
+)
+
 
 class Settings(BaseSettings):
     """
@@ -161,11 +132,11 @@ class Settings(BaseSettings):
         env_prefix="TRANSACTION_",
         env_nested_delimiter="__",
         env_file=".env",
+        extra="ignore",
     )
 
     authorizer: Literal["egi", "globus"]
     client: ClientSettings
-
     debug: bool = False
 
 

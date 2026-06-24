@@ -1,4 +1,3 @@
-import json
 import logging
 import uuid
 from datetime import datetime
@@ -33,7 +32,7 @@ from stac_fastapi.extensions.core.transaction.request import PartialItem, PatchO
 from stac_fastapi.types.stac import Collection
 from stac_pydantic.item import Item
 
-from src.settings import settings
+from settings import settings
 from utils import (
     operation_to_partial_item,
     validate_extensions,
@@ -66,9 +65,7 @@ class TransactionClient(BaseTransactionsClient):
                         return groups
         return []
 
-    def globus_authorize(
-        self, item: Item, request: Request, collection_id: str
-    ) -> dict:
+    def globus_authorize(self, item: Item, request: Request, collection_id: str) -> dict:
         properties = item.properties
 
         if item.collection != collection_id:
@@ -76,17 +73,12 @@ class TransactionClient(BaseTransactionsClient):
         if getattr(properties, "project", None) != collection_id:
             raise ValueError("Item project must match path collection_id")
 
-        allowed_groups = self.allowed_groups(
-            properties, settings.client.access_control_policy
-        )
+        allowed_groups = self.allowed_groups(properties, settings.client.access_control_policy)
         allowed_groups_uuid = [g.get("uuid") for g in allowed_groups]
 
         authorizer = request.state.authorizer
-        access_token_json = authorizer["context"].get("access_token")
-        user_groups_json = authorizer["context"].get("groups")
-
-        token_info = json.loads(access_token_json)
-        user_groups = json.loads(user_groups_json)
+        token_info = authorizer.get("token_info")
+        user_groups = authorizer.get("groups")
 
         authorized_identities = []
         for group in user_groups:
@@ -98,30 +90,15 @@ class TransactionClient(BaseTransactionsClient):
                     }
                 )
         if not authorized_identities:
-            raise MissingPermissionException(
-                permission_type="globus", target=collection_id
-            )
-
-        identity_set_detail = token_info.get("identity_set_detail", [])
-        for identity in identity_set_detail:
-            for authorized_identity in authorized_identities:
-                if identity.get("sub") == authorized_identity.get("identity_id"):
-                    authorized_identity |= {
-                        "username": identity.get("username"),
-                        "name": identity.get("name"),
-                        "email": identity.get("email"),
-                        "identity_provider": identity.get("identity_provider"),
-                        "identity_provider_display_name": identity.get(
-                            "identity_provider_display_name"
-                        ),
-                        "last_authentication": identity.get("last_authentication"),
-                    }
+            raise MissingPermissionException(permission_type="globus", target=collection_id)
 
         requester_data = RequesterData(
             client_id=token_info.get("client_id"),
             sub=token_info.get("sub"),
             iss=token_info.get("iss"),
         )
+
+        logger.info("REQUESTER DATA: %s", requester_data)
 
         auth = Auth(
             requester_data=requester_data,
@@ -174,9 +151,7 @@ class TransactionClient(BaseTransactionsClient):
     ) -> Auth:
 
         if settings.authorizer == "globus":
-            return self.globus_authorize(
-                collection_id=collection_id, item=item, request=request
-            )
+            return self.globus_authorize(collection_id=collection_id, item=item, request=request)
         else:
             return self.egi_authorize(
                 collection_id=collection_id,
@@ -213,12 +188,8 @@ class TransactionClient(BaseTransactionsClient):
             raise AuthorizationException(instance=f"{request_id}:{event_id}") from exc
 
         item_extensions = item.stac_extensions if item.stac_extensions else []
-
         try:
-            item_extensions = validate_extensions(
-                collection_id=collection_id, item_extensions=item_extensions
-            )
-
+            item_extensions = validate_extensions(collection_id=collection_id, item_extensions=item_extensions)
             validate_post(
                 event_id=event_id,
                 request_id=request_id,
@@ -233,13 +204,13 @@ class TransactionClient(BaseTransactionsClient):
             STACValidationException,
             UnexpectedExtensionException,
         ) as exc:
-            raise RFC9457Exception(
-                status_code=exc.status_code,
-                type=exc.type,
-                detail=exc.detail,
-                instance=f"{request_id}:{event_id}",
-            ) from exc
-
+            rfc_exc = RFC9457Exception()
+            rfc_exc.status_code = 400
+            rfc_exc.type = exc.type
+            rfc_exc.title = exc.title
+            rfc_exc.detail = exc.detail
+            rfc_exc.instance = f"{request_id}:{event_id}"
+            raise rfc_exc from exc
         user_agent = headers.get("user-agent", "/").split("/")
 
         payload = CreatePayload(
@@ -250,9 +221,7 @@ class TransactionClient(BaseTransactionsClient):
 
         data = Data(type="STAC", payload=payload)
 
-        publisher = Publisher(
-            package=user_agent[0], version=user_agent[1] if len(user_agent) > 1 else ""
-        )
+        publisher = Publisher(package=user_agent[0], version=user_agent[1] if len(user_agent) > 1 else "")
 
         metadata = Metadata(
             auth=auth,
@@ -303,9 +272,7 @@ class TransactionClient(BaseTransactionsClient):
 
         item_extensions = item.stac_extensions if item.stac_extensions else []
 
-        item_extensions = validate_extensions(
-            collection_id=collection_id, item_extensions=item_extensions
-        )
+        item_extensions = validate_extensions(collection_id=collection_id, item_extensions=item_extensions)
 
         validate_post(
             event_id=event_id,
@@ -326,9 +293,7 @@ class TransactionClient(BaseTransactionsClient):
 
         data = Data(type="STAC", payload=payload)
 
-        publisher = Publisher(
-            package=user_agent[0], version=user_agent[1] if len(user_agent) > 1 else ""
-        )
+        publisher = Publisher(package=user_agent[0], version=user_agent[1] if len(user_agent) > 1 else "")
         metadata = Metadata(
             auth=auth,
             event_id=event_id,
@@ -363,11 +328,7 @@ class TransactionClient(BaseTransactionsClient):
     ) -> Optional[Union[Item, Response]]:
         logger.info("PATCH REQUEST: %s", patch)
 
-        item = (
-            operation_to_partial_item(collection_id=collection_id, operations=patch)
-            if isinstance(patch, list)
-            else patch
-        )
+        item = operation_to_partial_item(collection_id=collection_id, operations=patch) if isinstance(patch, list) else patch
 
         headers = request.headers.get("headers", {})
 
@@ -385,9 +346,7 @@ class TransactionClient(BaseTransactionsClient):
 
         item_extensions = item.stac_extensions if item.stac_extensions else []
 
-        item_extensions = validate_extensions(
-            collection_id=collection_id, item_extensions=item_extensions
-        )
+        item_extensions = validate_extensions(collection_id=collection_id, item_extensions=item_extensions)
 
         validate_patch(
             event_id=event_id,
@@ -408,9 +367,7 @@ class TransactionClient(BaseTransactionsClient):
 
         data = Data(type="STAC", payload=payload)
 
-        publisher = Publisher(
-            package=user_agent[0], version=user_agent[1] if len(user_agent) > 1 else ""
-        )
+        publisher = Publisher(package=user_agent[0], version=user_agent[1] if len(user_agent) > 1 else "")
         metadata = Metadata(
             auth=auth,
             event_id=event_id,
@@ -469,9 +426,7 @@ class TransactionClient(BaseTransactionsClient):
 
         data = Data(type="STAC", payload=payload)
 
-        publisher = Publisher(
-            package=user_agent[0], version=user_agent[1] if len(user_agent) > 1 else ""
-        )
+        publisher = Publisher(package=user_agent[0], version=user_agent[1] if len(user_agent) > 1 else "")
 
         metadata = Metadata(
             auth=auth,

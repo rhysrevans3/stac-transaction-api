@@ -1,7 +1,18 @@
 services:
   api:
+    platform: linux/amd64
     build: .
     ports:
       - "8000:8000"
     volumes:
       - ./src:/var/task
+      - /var/task/.venv
+    env_file:
+      - ./src/settings/.env
+    command: >
+      uvicorn api:app
+      --host 0.0.0.0
+      --port 8000
+      --reload
+      --ssl-keyfile /etc/ssl/transaction/server.key
+      --ssl-certfile /etc/ssl/transaction/server.crt

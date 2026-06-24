@@ -6,7 +6,7 @@ from esgf_core_utils.models.kafka.events import RequesterData
 from fastapi import Request
 from starlette.middleware.base import BaseHTTPMiddleware
 
-from src.settings import settings
+from settings import settings
 
 logger = logging.getLogger("uvicorn.error")
 

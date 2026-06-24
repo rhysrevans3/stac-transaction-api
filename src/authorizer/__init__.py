@@ -1,8 +1,8 @@
-from src.settings import settings
+from settings import settings
 
 if settings.authorizer == "egi":
-    from src.authorizer.egi_authorizer import EGIAuthorizer as Auth
+    from authorizer.egi_authorizer import EGIAuthorizer as Auth
 else:
-    from src.authorizer.globus_authorizer import GlobusAuthorizer as Auth
+    from authorizer.globus_authorizer import GlobusAuthorizer as Auth
 
 Authorizer = Auth

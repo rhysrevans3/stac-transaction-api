@@ -18,15 +18,13 @@ from stac_fastapi.extensions.core.transaction.request import (
 )
 from stac_pydantic.item import Item
 
-from src.settings import DEFAULT_EXTENSIONS
+from settings import DEFAULT_EXTENSIONS
 
 # Setup logger
 logger = logging.getLogger("uvicorn.error")
 
 
-def operation_to_partial_item(
-    collection_id: str, operations: list[PatchOperation]
-) -> PartialItem:
+def operation_to_partial_item(collection_id: str, operations: list[PatchOperation]) -> PartialItem:
     """Convert operations to partial item
 
     Args:
@@ -83,9 +81,7 @@ def operation_to_partial_item(
     return PartialItem.model_validate(item)
 
 
-def validate_extensions(
-    collection_id: str, item_extensions: list[str], strict: bool = False
-) -> list[str]:
+def validate_extensions(collection_id: str, item_extensions: list[str], strict: bool = False) -> list[str]:
     """Validate expected default extensions are present.
 
     Args:
@@ -109,20 +105,14 @@ def validate_extensions(
             expected_extension_key,
             expected_extension,
         ) in expected_extensions.copy().items():
-            if any(
-                re.compile(regex).match(str(item_extension))
-                for regex in expected_extension["regex"]
-            ):
+            if any(re.compile(regex).match(str(item_extension)) for regex in expected_extension["regex"]):
                 expected_extensions.pop(expected_extension_key)
                 expected = True
 
         if not expected:
             raise UnexpectedExtensionException(extension=item_extension)
 
-    missing_extensions = [
-        expected_extension["default"]
-        for expected_extension in expected_extensions.values()
-    ]
+    missing_extensions = [expected_extension["default"] for expected_extension in expected_extensions.values()]
 
     if strict & len(missing_extensions) > 0:
         raise ExpectedExtensionsMissingException(extensions=missing_extensions)
@@ -203,9 +193,7 @@ def validate_patch(
 
         required_keys = set()
         raise_errors = []
-        for error in extension_validator.iter_errors(
-            json.loads(item.model_dump_json())
-        ):
+        for error in extension_validator.iter_errors(json.loads(item.model_dump_json())):
 
             if error.validator in ["oneOf"]:
                 continue
@@ -217,9 +205,7 @@ def validate_patch(
                 raise_errors.append(error)
 
         for null_key_error in required_keys & null_keys:
-            raise_errors.append(
-                f"Variable {null_key_error} is required and cannot be removed"
-            )
+            raise_errors.append(f"Variable {null_key_error} is required and cannot be removed")
 
         if raise_errors:
             logger.error(f"STAC validation error: {item_id}")
@@ -250,9 +236,7 @@ def validate_post(
         extension_validator = get_extension_validator(str(extension))
 
         raise_errors = []
-        for error in extension_validator.iter_errors(
-            json.loads(item.model_dump_json())
-        ):
+        for error in extension_validator.iter_errors(json.loads(item.model_dump_json())):
             raise_errors.append(error)
 
         if raise_errors:

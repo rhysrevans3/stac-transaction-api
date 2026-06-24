@@ -51,19 +51,11 @@ def main(args):
             print(f"PATCHing {path} to {region} STAC Transaction API")
             # Retraction
             if 100 < i and i <= 200:
-                operations = [
-                    {
-                        "op": "add",
-                        "path": "/properties/retracted",
-                        "value": True
-                    }
-                ]
+                operations = [{"op": "add", "path": "/properties/retracted", "value": True}]
                 response = tc.json_patch(
-                        "CMIP6",
-                        item_id=item_id,
-                        entry={
-                            "operations": operations
-                        },
+                    "CMIP6",
+                    item_id=item_id,
+                    entry={"operations": operations},
                 )
                 print(f"Response: {response}")
 
@@ -92,16 +84,10 @@ def main(args):
                                         "alternate:name": "eagle.alcf.anl.gov",
                                     }
                                 },
-                            }
+                            },
                         }
                         operations.append(entry)
-                    response = tc.json_patch(
-                        "CMIP6",
-                        item_id=item_id,
-                        entry={
-                            "operations": operations
-                        }
-                    )
+                    response = tc.json_patch("CMIP6", item_id=item_id, entry={"operations": operations})
                     print(f"Response: {response}")
 
 

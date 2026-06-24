@@ -14,24 +14,18 @@ dependencies = [
     "jsonschema>=4.24.0",
     "stac-fastapi.types>=6.0.0",
     "stac-fastapi.extensions>=6.0.0",
-    "uvicorn>=0.34.0",
+    "uvicorn>=0.46.0",
 ]
 
-[project.optional-dependencies]
+[dependency-groups]
 ceda = [
     "httpx>=0.28.1",
     "httpx-auth>=0.23.1",
 ]
 globus = [
-    "boto3==1.35.60",
-    "certifi==2024.6.2",
-    "cffi==1.16.0",
-    "charset-normalizer==3.3.2",
-    "cryptography==42.0.8",
-    "esgvoc==1.0.0",
-    "globus-sdk==3.41.0",
-    "idna==3.10",
-    "pyjwt==2.8.0",
+    "boto3==1.43.6",
+    "globus-sdk==3.62.0",
+    "pyjwt==2.12.1",
 ]
 test = [
     "httpx>=0.28.1",

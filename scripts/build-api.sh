@@ -1,6 +1,6 @@
 #!/bin/bash
 
-API_IMAGE=stac-transaction-api
+API_IMAGE=transaction-api
 
 docker build --platform=linux/x86_64 -f ./Dockerfile -t $API_IMAGE:latest .
 

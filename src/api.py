@@ -4,9 +4,9 @@ from fastapi.responses import JSONResponse
 from stac_fastapi.extensions.core.transaction import TransactionExtension
 from stac_fastapi.types.config import ApiSettings
 
+from authorizer import Authorizer
 from client import TransactionClient
-from src.authorizer import Authorizer
-from src.settings import settings
+from settings import settings
 
 app = FastAPI(debug=settings.debug)
 
