@@ -5,7 +5,7 @@ import httpx
 from esgf_core_utils.models.auth import Authorizer
 from esgf_core_utils.models.exceptions import InvalidTokenAudienceException
 from esgf_core_utils.models.kafka.events import RequesterData
-from fastapi import Request
+from fastapi import HTTPException, Request
 from starlette.middleware.base import BaseHTTPMiddleware
 
 from settings import settings
@@ -45,20 +45,30 @@ class EGIAuthorizer(BaseHTTPMiddleware):
                 "Post request to %s",
                 settings.client.introspection_endpoint,
             )
-            response = await client.post(
-                settings.client.introspection_endpoint,
-                headers={"Content-type": "application/x-www-form-urlencoded"},
-                data=f"token={request.headers.get('authorization')[7:]}",
-                auth=auth,
-                timeout=5,
-            )
-            response.raise_for_status()
+            if token := request.headers.get("authorization", "").removeprefix(
+                "Bearer "
+            ):
+                response = await client.post(
+                    settings.client.introspection_endpoint,
+                    headers={"Content-type": "application/x-www-form-urlencoded"},
+                    data=f"token={request.headers.get('authorization', '').removeprefix('Bearer ')}",
+                    auth=auth,
+                    timeout=5,
+                )
+                response.raise_for_status()
+
+            else:
+                raise HTTPException(
+                    status_code=401, detail="Missing or invalid bearer token"
+                )
 
         token_info = response.json()
 
         logger.debug("Token info: %s", token_info)
 
-        if request.headers["host"] not in [urlparse(aud).hostname for aud in token_info["aud"]]:
+        if request.headers["host"] not in [
+            urlparse(aud).hostname for aud in token_info["aud"]
+        ]:
             raise InvalidTokenAudienceException(
                 token_audience=request.headers["host"],
                 expected_audience=", ".join(token_info["aud"]),
