@@ -51,7 +51,7 @@ class EGIAuthorizer(BaseHTTPMiddleware):
                 response = await client.post(
                     settings.client.introspection_endpoint,
                     headers={"Content-type": "application/x-www-form-urlencoded"},
-                    data=f"token={request.headers.get('authorization', '').removeprefix('Bearer ')}",
+                    data=f"token={token}",
                     auth=auth,
                     timeout=5,
                 )
