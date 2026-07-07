@@ -1,19 +1,21 @@
 [project]
 name = "stac-transaction-api"
 requires-python = ">=3.12,<4.0"
-description = "West ESGF STAC Transaction API"
-version = "0.1.0"
+description = "ESGF STAC Transaction API"
+version = "0.2.0"
 authors = [
     {"name" = "Lukasz Lacinski", "email" = "lukasz@uchicago.edu"},
     {"name" = "Steve Turoscy", "email" = "sturoscy@uchicago.edu"},
     ]
 readme = "README.md"
 dependencies = [
-    "esgf-core-utils>=1.0.7",
+    "esgf-core-utils>=1.1.0",
     "fastapi>=0.114.0",
     "jsonschema>=4.24.0",
-    "stac-fastapi.types>=6.0.0",
-    "stac-fastapi.extensions>=6.0.0",
+    "packaging>=26.2",
+    "shapely>=2.1.2",
+    "stac-fastapi.types>=6.3.0",
+    "stac-fastapi.extensions>=6.3.0",
     "uvicorn>=0.46.0",
 ]
 
@@ -21,6 +23,8 @@ dependencies = [
 ceda = [
     "httpx>=0.28.1",
     "httpx-auth>=0.23.1",
+    "confluent-kafka>=2.12.1",
+    "pydantic>=2.12"
 ]
 globus = [
     "boto3==1.43.6",

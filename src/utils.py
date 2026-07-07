@@ -7,19 +7,22 @@ import jsonschema
 from jsonschema.exceptions import relevance
 from esgf_core_utils.models.exceptions import (
     ExpectedExtensionsMissingException,
+    ExtensionBelowMinimumException,
     OperationNotPermittedException,
     STACValidationException,
     UnexpectedExtensionException,
 )
 from jsonschema.protocols import Validator
-from stac_fastapi.extensions.core.transaction.request import (
+from packaging.version import Version
+from shapely.geometry import shape
+from stac_fastapi.extensions.transaction.request import (
     PartialItem,
     PatchAddReplaceTest,
     PatchOperation,
 )
 from stac_pydantic.item import Item
 
-from settings import DEFAULT_EXTENSIONS
+from settings import DEFAULT_EXTENSIONS, VERSION_REGEX
 
 # Setup logger
 logger = logging.getLogger("uvicorn.error")
@@ -82,6 +85,24 @@ def operation_to_partial_item(collection_id: str, operations: list[PatchOperatio
     return PartialItem.model_validate(item)
 
 
+def validate_extension_version(minimum: str, extension: str) -> None:
+    """Validate an extenions version is above the minimum.
+
+    Args:
+        default (str): default extension with minimum version.
+        extension (str): extension to be validated.
+
+    Raises:
+        ExtensionBelowMinimumException: extension below minimum
+    """
+
+    minimum_version = VERSION_REGEX.search(minimum).group(1)
+    extension_version = VERSION_REGEX.search(extension).group(1)
+
+    if Version(extension_version) < Version(minimum_version):
+        raise ExtensionBelowMinimumException(extension=extension, minimum_version=f"v{minimum_version}")
+
+
 def validate_extensions(collection_id: str, item_extensions: list[str], strict: bool = False) -> list[str]:
     """Validate expected default extensions are present.
 
@@ -109,6 +130,8 @@ def validate_extensions(collection_id: str, item_extensions: list[str], strict: 
             if any(re.compile(regex).match(str(item_extension)) for regex in expected_extension["regex"]):
                 expected_extensions.pop(expected_extension_key)
                 expected = True
+
+                validate_extension_version(minimum=expected_extension["default"], extension=str(item_extension))
 
         if not expected:
             raise UnexpectedExtensionException(extension=item_extension)
@@ -171,6 +194,37 @@ def get_extension_validator(extension: str) -> Validator:
     return cls(schema)
 
 
+def validate_bbox(bbox: list[int | float]) -> None:
+    """Validate bounding box is WGS84
+
+    Args:
+        bbox (int | float): bounding box to be validated
+
+    Raises:
+        STACValidationException: _description_
+    """
+    minx, miny, maxx, maxy = bbox[:4]
+    if not (-180.0 <= minx <= 180.0 and -180.0 <= maxx <= 180.0 and -90.0 <= miny <= 90.0 and -90.0 <= maxy <= 90.0):
+        raise STACValidationException()
+
+
+def validate_geometry(geometry: dict) -> None:
+    """Validate GeoJSON geometry
+
+    Args:
+        geometry (dict): geometry to be validation.
+
+    Raises:
+        STACValidationException: Validation error
+    """
+    geometry_shape = shape(geometry)
+    if not geometry_shape.is_valid:
+        raise STACValidationException()
+
+    # Check geometry is WGS84
+    validate_bbox(geometry_shape.bounds)
+
+
 def validate_patch(
     event_id: str,
     request_id: str,
@@ -189,6 +243,12 @@ def validate_patch(
         STACValidationException: Validation error
         UnexpectedExtensionException: Unexpect exception with validation
     """
+    if item.geometry:
+        validate_geometry(item.geometry)
+
+    if item.bbox:
+        validate_bbox(item.bbox)
+
     item, null_keys = get_null_keys(item)
 
     for extension in extensions:
@@ -211,14 +271,12 @@ def validate_patch(
             raise_errors.append(f"Variable {null_key_error} is required and cannot be removed")
 
         if raise_errors:
-            logger.error(f"STAC validation error: {item_id}")
+            logger.error("STAC validation error: %s", item_id)
 
             raise STACValidationException()
 
 
 def validate_post(
-    event_id: str,
-    request_id: str,
     item_id: str,
     item: Item,
     extensions: list[str],
@@ -226,8 +284,6 @@ def validate_post(
     """Validate a Item post request
 
     Args:
-        event_id (str): ID of the Kafka event
-        request_id (str): ID of the request
         item_id (str): ID of the item to validate
         item (Item): Partial Item to be validated to validate
         extensions (list[str]): List of STAC extensions to be validated against
@@ -235,6 +291,9 @@ def validate_post(
     Raises:
         STACValidationException: Validation error
     """
+    validate_geometry(item.geometry)
+    validate_bbox(item.bbox)
+
     for extension in extensions:
         extension_validator = get_extension_validator(str(extension))
 

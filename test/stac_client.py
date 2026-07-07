@@ -1,11 +1,17 @@
 import os
-from globus_sdk import NativeAppAuthClient, RefreshTokenAuthorizer, BaseClient, GroupsClient
+
+from globus_sdk import (
+    BaseClient,
+    GroupsClient,
+    NativeAppAuthClient,
+    RefreshTokenAuthorizer,
+)
 from globus_sdk.scopes import GroupsScopes
 from globus_sdk.tokenstorage import SimpleJSONFileAdapter
-from settings import STAC_CLIENT, TOKEN_STORAGE_FILE, STAC_TRANSACTION_API
 
+from settings import STAC_CLIENT, STAC_TRANSACTION_API, TOKEN_STORAGE_FILE
 
-__version__ = "0.1.0"
+__version__ = "0.2.0"
 
 
 class TransactionClient:
@@ -14,8 +20,14 @@ class TransactionClient:
             self.stac_api = stac_api
         else:
             self.stac_api = STAC_TRANSACTION_API.get("base_url")
-        self.scopes = [GroupsScopes.view_my_groups_and_memberships, STAC_TRANSACTION_API.get("scope_string")]
-        self.auth_client = NativeAppAuthClient(client_id=STAC_CLIENT.get("client_id"), app_name="ESGF2 STAC Transaction API")
+        self.scopes = [
+            GroupsScopes.view_my_groups_and_memberships,
+            STAC_TRANSACTION_API.get("scope_string"),
+        ]
+        self.auth_client = NativeAppAuthClient(
+            client_id=STAC_CLIENT.get("client_id"),
+            app_name="ESGF2 STAC Transaction API",
+        )
         self._create_clients()
 
     def _do_login_flow(self):

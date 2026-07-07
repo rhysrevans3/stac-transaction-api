@@ -14,3 +14,4 @@ class CEDAClientSettings(BaseModel):
         r"urn\:mace\:egi\.eu\:group\:esgf.vo.egi.eu\:(?P<type>[^:]*)\:(?P<id>[^:]*)"
         r"(\:institution\:(?P<institution>[^:]*))?\:role=(?P<role>[^:]*)#aai\.egi\.eu"
     )
+    scope: str = "offline_access entitlements"

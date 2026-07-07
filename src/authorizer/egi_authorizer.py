@@ -1,7 +1,9 @@
 import logging
+from urllib.parse import urlparse
 
 import httpx
-from esgf_core_utils.models.auth.egi import EGIAuth
+from esgf_core_utils.models.auth import Authorizer
+from esgf_core_utils.models.exceptions import InvalidTokenAudienceException
 from esgf_core_utils.models.kafka.events import RequesterData
 from fastapi import Request
 from starlette.middleware.base import BaseHTTPMiddleware
@@ -28,10 +30,10 @@ class EGIAuthorizer(BaseHTTPMiddleware):
 
     async def dispatch(self, request: Request, call_next):
         # Need to bypass authorization for this endpoint
-        if request.url.path == "/healthcheck":
+        if request.url.path in ["/healthcheck", "/scope"]:
             return await call_next(request)
 
-        logger.info("Request Headers %s", request.headers)
+        logger.debug("Request Headers %s", request.headers)
 
         auth = httpx.BasicAuth(
             username=settings.client.client_id,
@@ -39,7 +41,7 @@ class EGIAuthorizer(BaseHTTPMiddleware):
         )
 
         async with httpx.AsyncClient(timeout=5.0, verify=False) as client:
-            logger.info(
+            logger.debug(
                 "Post request to %s",
                 settings.client.introspection_endpoint,
             )
@@ -54,7 +56,15 @@ class EGIAuthorizer(BaseHTTPMiddleware):
 
         token_info = response.json()
 
-        authorizer = EGIAuth(
+        logger.debug("Token info: %s", token_info)
+
+        if request.headers["host"] not in [urlparse(aud).hostname for aud in token_info["aud"]]:
+            raise InvalidTokenAudienceException(
+                token_audience=request.headers["host"],
+                expected_audience=", ".join(token_info["aud"]),
+            )
+
+        authorizer = Authorizer(
             regex=settings.client.regex,
             requester_data=RequesterData(
                 client_id=token_info["client_id"],
