@@ -4,6 +4,7 @@ import re
 
 import httpx
 import jsonschema
+from jsonschema.exceptions import relevance
 from esgf_core_utils.models.exceptions import (
     ExpectedExtensionsMissingException,
     ExtensionBelowMinimumException,
@@ -225,6 +226,8 @@ def validate_geometry(geometry: dict) -> None:
 
 
 def validate_patch(
+    event_id: str,
+    request_id: str,
     item_id: str,
     item: PartialItem,
     extensions: list[str],
@@ -294,11 +297,26 @@ def validate_post(
     for extension in extensions:
         extension_validator = get_extension_validator(str(extension))
 
-        raise_errors = []
-        for error in extension_validator.iter_errors(json.loads(item.model_dump_json())):
-            raise_errors.append(error)
+        raise_errors = sorted(
+            extension_validator.iter_errors(json.loads(item.model_dump_json())),
+            key=relevance,
+        )
 
         if raise_errors:
-            logger.error("STAC validation error: %s", item_id)
+            error_parts = []
+            for error in raise_errors:
+                # anyOf/oneOf failures expose root causes in context (jsonschema docs).
+                if error.context:
+                    error_parts.append(error.context[0].message)
+                else:
+                    error_parts.append(error.message)
 
-            raise STACValidationException()
+            validation_errors = "; ".join(error_parts)
+            detail = (
+                "Your request is invalid -- please ensure your request is valid and try again. "
+                f"Item `{item_id}` failed validation against `{extension}`: {validation_errors}"
+            )
+            logger.error(f"STAC validation error: {item_id}")
+            exc = STACValidationException()
+            exc.detail = detail
+            raise exc

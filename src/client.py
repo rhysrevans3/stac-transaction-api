@@ -3,7 +3,8 @@ import uuid
 from datetime import datetime
 from typing import Optional, Union
 
-from esgf_core_utils.models.auth import Authorizer
+
+from authorizer.globus_auth import GlobusAuth
 from esgf_core_utils.models.exceptions import (
     AuthorizationException,
     ExpectedExtensionsMissingException,
@@ -23,10 +24,10 @@ from esgf_core_utils.models.kafka.events import (
     Metadata,
     PatchPayload,
     Publisher,
-    RequesterData,
 )
 from esgf_core_utils.models.kafka.producer import KafkaProducer
 from fastapi import Request, Response, status
+from src.authorizer import Authorizer
 from stac_fastapi.extensions.transaction import BaseTransactionsClient
 from stac_fastapi.extensions.transaction.request import PartialItem, PatchOperation
 from stac_fastapi.types.stac import Collection
@@ -54,61 +55,39 @@ class TransactionClient(BaseTransactionsClient):
     def __init__(self):
         self.producer = KafkaProducer()
 
-    def allowed_groups(self, properties, acp) -> list:
-        if isinstance(acp, list):
-            return acp
-        for facet, subpolicy in acp.items():
-            if hasattr(properties, facet):
-                property_value = getattr(properties, facet)
-                if isinstance(property_value, str):
-                    property_value = [property_value]
-                matches = list(set(property_value) & set(subpolicy.keys()))
-                for match in matches:
-                    groups = self.allowed_groups(properties, subpolicy[match])
-                    if groups:
-                        return groups
-        return []
+    def globus_authorize(
+        self,
+        collection_id: str,
+        item: Item,
+        role: str,
+        request: Request,
+        request_id: str,
+        event_id: str,
+    ) -> Auth:
+        """Auhorise request with Globus Auth
 
-    def globus_authorize(self, item: Item, request: Request, collection_id: str) -> dict:
-        properties = item.properties
+        Args:
+            item (Item): item to check authorization for
+            role (str): role to check authorization for
+            request (Request): current request
 
-        if item.collection != collection_id:
-            raise ValueError("Item collection must match path collection_id")
-        if getattr(properties, "project", None) != collection_id:
-            raise ValueError("Item project must match path collection_id")
-
-        allowed_groups = self.allowed_groups(properties, settings.client.access_control_policy)
-        allowed_groups_uuid = [g.get("uuid") for g in allowed_groups]
-
-        authorizer = request.state.authorizer
-        token_info = authorizer.get("token_info")
-        user_groups = authorizer.get("groups")
-
-        authorized_identities = []
-        for group in user_groups:
-            if group.get("group_id") in allowed_groups_uuid:
-                authorized_identities.append(
-                    {
-                        "group_id": group.get("group_id"),
-                        "identity_id": group.get("identity_id"),
-                    }
-                )
-        if not authorized_identities:
-            raise MissingPermissionException(permission_type="globus", target=collection_id)
-
-        requester_data = RequesterData(
-            client_id=token_info.get("client_id"),
-            sub=token_info.get("sub"),
-            iss=token_info.get("iss"),
+        Returns:
+            Auth: Auth object if successful
+        """
+        authorizer: GlobusAuth = request.state.authorizer
+        authorizer.authorize(
+            collection_id=collection_id,
+            item=item,
+            role=role,
+            request_id=request_id,
+            event_id=event_id,
         )
 
-        logger.info("REQUESTER DATA: %s", requester_data)
+        logger.info("REQUESTER DATA: %s", authorizer.requester_data)
 
-        auth = Auth(
-            requester_data=requester_data,
+        return Auth(
+            requester_data=authorizer.requester_data.model_dump(),
         )
-
-        return auth
 
     def egi_authorize(
         self,
@@ -155,7 +134,14 @@ class TransactionClient(BaseTransactionsClient):
     ) -> Auth:
 
         if settings.authorizer == "globus":
-            return self.globus_authorize(collection_id=collection_id, item=item, request=request)
+            return self.globus_authorize(
+                collection_id=collection_id,
+                item=item,
+                role=role,
+                request=request,
+                request_id=request_id,
+                event_id=event_id,
+            )
         else:
             return self.egi_authorize(
                 collection_id=collection_id,
@@ -313,11 +299,16 @@ class TransactionClient(BaseTransactionsClient):
 
         user_agent = headers.get("user-agent", "/").split("/")
 
+        if isinstance(patch, list):
+            patch_body = [op.model_dump() for op in patch]
+        else:
+            patch_body = item.model_dump()
+
         payload = PatchPayload(
             method="PATCH",
             collection_id=collection_id,
             item_id=item_id,
-            patch=patch_adapter.dump_python(patch),
+            patch=patch_body,
         )
 
         data = Data(type="STAC", payload=payload)
