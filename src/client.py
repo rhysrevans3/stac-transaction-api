@@ -181,7 +181,7 @@ class TransactionClient(BaseTransactionsClient):
         request: Request,
     ) -> Optional[Union[Item, Response, None]]:
 
-        logger.debug("CREATE REQUEST: %s", item)
+        logger.debug("CREATE REQUEST: %s", item.model_dump_json())
         headers = request.headers
 
         event_id = uuid.uuid4().hex
