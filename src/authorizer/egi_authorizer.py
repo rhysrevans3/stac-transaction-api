@@ -17,8 +17,8 @@ FastAPI Middleware Authorizer
     Authorizer type: FastAPI Middleware
     Event payload: Token
     Token source: Authorization
-    Token validation: ^Bearer\s[^\s]+$                                                    # noqa: W605
-                      ^Bearer\s[0-9A-Za-z]+$ for access tokens issued by Globus Auth (?)  # noqa: W605
+    Token validation: ^Bearer\\s[^\\s]+$                                                    # noqa: W605
+                      ^Bearer\\s[0-9A-Za-z]+$ for access tokens issued by Globus Auth (?)  # noqa: W605
     Authorization caching: 300 seconds
 """
 
@@ -40,7 +40,9 @@ class EGIAuthorizer(BaseHTTPMiddleware):
             password=settings.client.client_secret,
         )
 
-        async with httpx.AsyncClient(timeout=5.0, verify=False) as client:
+        async with httpx.AsyncClient(
+            timeout=settings.client.timeout, verify=False
+        ) as client:
             logger.debug(
                 "Post request to %s",
                 settings.client.introspection_endpoint,
@@ -53,7 +55,6 @@ class EGIAuthorizer(BaseHTTPMiddleware):
                     headers={"Content-type": "application/x-www-form-urlencoded"},
                     data=f"token={token}",
                     auth=auth,
-                    timeout=5,
                 )
                 response.raise_for_status()
 
