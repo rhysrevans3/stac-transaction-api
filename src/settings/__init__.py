@@ -54,7 +54,7 @@ DEFAULT_EXTENSIONS = {
     "CORDEX-CMIP6": {
         "CORDEX-CMIP6": {
             "regex": [r"https:\/\/esgf\.github\.io\/stac-transaction-api\/cordex-cmip6\/v[0-9]\.[0-9]\.[0-9]/schema\.json"],
-            "default": "https://esgf.github.io/stac-transaction-api/cordex-cmip6/v3.1.2/schema.json",
+            "default": "https://esgf.github.io/stac-transaction-api/cordex-cmip6/v1.2.1/schema.json",
         },
         "alternate_assets": {
             "regex": [r"https:\/\/stac-extensions\.github\.io\/alternate-assets\/v[0-9]\.[0-9]\.[0-9]\/schema\.json"],
