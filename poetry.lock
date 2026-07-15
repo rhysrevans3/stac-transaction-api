@@ -769,14 +769,14 @@ ssh = ["bcrypt (>=3.1.5)"]
 
 [[package]]
 name = "esgf-core-utils"
-version = "1.0.7"
+version = "1.1.0"
 description = "Common library and models for the ESGF core architecture"
 optional = false
 python-versions = "<4.0,>=3.12"
 groups = ["main"]
 files = [
-    {file = "esgf_core_utils-1.0.7-py3-none-any.whl", hash = "sha256:6a22b314a8b2f59152424688d5c1d89e6631635ed5a31052b5af581faa18ae3b"},
-    {file = "esgf_core_utils-1.0.7.tar.gz", hash = "sha256:3dd1c5e5f678746f924bb24a73cde8f0e3d05147c6ea868e383deea696f96509"},
+    {file = "esgf_core_utils-1.1.0-py3-none-any.whl", hash = "sha256:8e3702998da2d5f8941091981cc5ed302ddb91e2eaf741d1f3a0bd295cd532cf"},
+    {file = "esgf_core_utils-1.1.0.tar.gz", hash = "sha256:091073d71117895657ca7ed1dc8166241b9d047fab8bb4d54bcaaac996f9939a"},
 ]
 
 [package.dependencies]
@@ -785,7 +785,7 @@ fastapi = ">=0.114.0"
 jinja2 = ">=3.1.6"
 pydantic = ">=2.11.0"
 pydantic-settings = ">=2.6.1"
-stac-fastapi-extensions = ">=6.0.0"
+stac-fastapi-extensions = ">=6.3.0"
 stac-pydantic = ">=3.1.1"
 
 [[package]]
@@ -1994,4 +1994,4 @@ standard = ["colorama (>=0.4) ; sys_platform == \"win32\"", "httptools (>=0.6.3)
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.12,<4.0"
-content-hash = "912d4156e14111ffaef1793ddc85859099bab225ab2356b768115e9e8d8fae78"
+content-hash = "3cd84bc65fbc5159c139b1fee076c5584fe4a5cf305458991d2566644fc8ba7f"
