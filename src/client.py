@@ -27,7 +27,6 @@ from esgf_core_utils.models.kafka.events import (
 )
 from esgf_core_utils.models.kafka.producer import KafkaProducer
 from fastapi import Request, Response, status
-from src.authorizer import Authorizer
 from stac_fastapi.extensions.transaction import BaseTransactionsClient
 from stac_fastapi.extensions.transaction.request import PartialItem, PatchOperation
 from stac_fastapi.types.stac import Collection
