@@ -203,10 +203,7 @@ def get_extension_validator(extension: str) -> Validator:
         raise e
     except json.JSONDecodeError as exc:
         e = UnexpectedExtensionException(extension=extension)
-        e.detail = (
-            f"Failed to decode the extension schema {exc.request.url}: {exc.msg}"
-            f"Error occured at line: {exc.lineno}, column: {exc.colno}"
-        )
+        e.detail = f"Failed to decode the extension schema {extension}: {exc.msg}" f"Error occured at line: {exc.lineno}, column: {exc.colno}"
         raise e
 
     # This block is cribbed (w/ change in error handling) from
@@ -279,7 +276,6 @@ def validate_patch(
 
     for extension in extensions:
         extension_validator = get_extension_validator(str(extension))
-        print(f"Extension validator: {extension_validator}")
 
         required_keys = set()
         raise_errors = []
