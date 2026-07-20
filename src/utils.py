@@ -199,11 +199,11 @@ def get_extension_validator(extension: str) -> Validator:
         raise e
     except httpx.RequestError as exc:
         e = UnexpectedExtensionException(extension=extension)
-        e.detail = f"An error occured while getting the extension schema {exc.request.url}"
+        e.detail = f"An error occurred while getting the extension schema {exc.request.url}"
         raise e
     except json.JSONDecodeError as exc:
         e = UnexpectedExtensionException(extension=extension)
-        e.detail = f"Failed to decode the extension schema {extension}: {exc.msg}" f"Error occured at line: {exc.lineno}, column: {exc.colno}"
+        e.detail = f"Failed to decode the extension schema {extension}: {exc.msg}. Error occured at line: {exc.lineno}, column: {exc.colno}"
         raise e
 
     # This block is cribbed (w/ change in error handling) from

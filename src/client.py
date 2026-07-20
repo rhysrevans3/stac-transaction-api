@@ -62,7 +62,7 @@ class TransactionClient(BaseTransactionsClient):
         request_id: str,
         event_id: str,
     ) -> Auth:
-        """Auhorise request with ESGF Core Utils Authorizer
+        """Authorize request with ESGF Core Utils Authorizer
 
         Args:
             item (Item): item to check authorization for
