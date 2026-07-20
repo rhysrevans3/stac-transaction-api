@@ -4,6 +4,7 @@ import time
 from dataclasses import dataclass
 from threading import Lock
 
+import boto3
 import urllib3
 from esgf_core_utils.models.auth import Authorizer
 from esgf_core_utils.models.kafka.events import RequesterData
@@ -93,6 +94,12 @@ def _load_access_control_policy(policy_path: str) -> list[str]:
     if parsed.scheme == "file":
         with open(parsed.path, encoding="utf-8") as file:
             text = file.read()
+    elif parsed.scheme == "s3":
+        if not parsed.host or not parsed.path:
+            raise RuntimeError(f"Invalid S3 policy path (expected s3://bucket/key): {policy_path}")
+        key = parsed.path.lstrip("/")
+        response = boto3.client("s3").get_object(Bucket=parsed.host, Key=key)
+        text = response["Body"].read().decode("utf-8")
     else:
         http = urllib3.PoolManager()
         response = http.request("GET", policy_path)
