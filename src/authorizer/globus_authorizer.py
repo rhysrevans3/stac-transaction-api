@@ -4,15 +4,16 @@ import time
 from dataclasses import dataclass
 from threading import Lock
 
+import boto3
 import urllib3
+from esgf_core_utils.models.auth import Authorizer
 from esgf_core_utils.models.kafka.events import RequesterData
 from fastapi import Request
 from fastapi.responses import JSONResponse
+from starlette.middleware.base import BaseHTTPMiddleware
 from globus_sdk import AccessTokenAuthorizer, GroupsClient
 from globus_sdk.scopes import GroupsScopes
-from starlette.middleware.base import BaseHTTPMiddleware
 
-from authorizer.globus_auth import GlobusAuth
 from settings import settings
 
 logger = logging.getLogger("uvicorn.error")
@@ -93,6 +94,12 @@ def _load_access_control_policy(policy_path: str) -> list[str]:
     if parsed.scheme == "file":
         with open(parsed.path, encoding="utf-8") as file:
             text = file.read()
+    elif parsed.scheme == "s3":
+        if not parsed.host or not parsed.path:
+            raise RuntimeError(f"Invalid S3 policy path (expected s3://bucket/key): {policy_path}")
+        key = parsed.path.lstrip("/")
+        response = boto3.client("s3").get_object(Bucket=parsed.host, Key=key)
+        text = response["Body"].read().decode("utf-8")
     else:
         http = urllib3.PoolManager()
         response = http.request("GET", policy_path)
@@ -130,20 +137,20 @@ def get_access_control_policy() -> list[str]:
     return policy
 
 
-def _authorizer_context(auth: dict) -> GlobusAuth:
-    """Build GlobusAuth from token auth and cached access control policy entitlements."""
+def _authorizer_context(auth: dict) -> Authorizer:
+    """Build Authorizer from token auth and cached access control policy entitlements."""
     token_info = auth["token_info"]
     user_group_ids = {group["group_id"] for group in auth["groups"]}
 
     entitlements = [entitlement for entitlement in get_access_control_policy() if entitlement.rsplit(":group:", 1)[-1] in user_group_ids]
 
-    authorizer = GlobusAuth(
+    authorizer = Authorizer(
+        regex=settings.client.regex,
         requester_data=RequesterData(
             client_id=token_info.get("client_id"),
             sub=token_info.get("sub"),
             iss=token_info.get("iss"),
         ),
-        regex=settings.client.regex,
     )
 
     authorizer.add(entitlements)

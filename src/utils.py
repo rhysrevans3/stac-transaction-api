@@ -185,8 +185,27 @@ def get_extension_validator(extension: str) -> Validator:
 
     Returns:
         Validator: Validator for extension
+
+    Raises:
+        UnexpectedExtensionException: Extension schema could not be downloaded or parsed
     """
-    schema = httpx.get(extension).json()
+    try:
+        response = httpx.get(extension)
+        response.raise_for_status()
+        schema = response.json()
+    except httpx.HTTPStatusError as exc:
+        e = UnexpectedExtensionException(extension=extension)
+        e.detail = f"Error {exc.response.status_code} while getting the extension schema {exc.request.url}"
+        raise e
+    except httpx.RequestError as exc:
+        e = UnexpectedExtensionException(extension=extension)
+        e.detail = f"An error occurred while getting the extension schema {exc.request.url}"
+        raise e
+    except json.JSONDecodeError as exc:
+        e = UnexpectedExtensionException(extension=extension)
+        e.detail = f"Failed to decode the extension schema {extension}: {exc.msg}. Error occured at line: {exc.lineno}, column: {exc.colno}"
+        raise e
+
     # This block is cribbed (w/ change in error handling) from
     # jsonschema.validate
     cls = jsonschema.validators.validator_for(schema)
@@ -205,7 +224,9 @@ def validate_bbox(bbox: list[int | float]) -> None:
     """
     minx, miny, maxx, maxy = bbox[:4]
     if not (-180.0 <= minx <= 180.0 and -180.0 <= maxx <= 180.0 and -90.0 <= miny <= 90.0 and -90.0 <= maxy <= 90.0):
-        raise STACValidationException()
+        exc = STACValidationException()
+        exc.detail = f"Bbox is invalid: {bbox}"
+        raise exc
 
 
 def validate_geometry(geometry: dict) -> None:
@@ -219,7 +240,9 @@ def validate_geometry(geometry: dict) -> None:
     """
     geometry_shape = shape(geometry)
     if not geometry_shape.is_valid:
-        raise STACValidationException()
+        exc = STACValidationException()
+        exc.detail = f"Geometry is invalid: {geometry}"
+        raise exc
 
     # Check geometry is WGS84
     validate_bbox(geometry_shape.bounds)

@@ -4,7 +4,7 @@ from datetime import datetime
 from typing import Optional, Union
 
 
-from authorizer.globus_auth import GlobusAuth
+from esgf_core_utils.models.auth import Authorizer
 from esgf_core_utils.models.exceptions import (
     AuthorizationException,
     ExpectedExtensionsMissingException,
@@ -27,14 +27,12 @@ from esgf_core_utils.models.kafka.events import (
 )
 from esgf_core_utils.models.kafka.producer import KafkaProducer
 from fastapi import Request, Response, status
-from src.authorizer import Authorizer
 from stac_fastapi.extensions.transaction import BaseTransactionsClient
 from stac_fastapi.extensions.transaction.request import PartialItem, PatchOperation
 from stac_fastapi.types.stac import Collection
 from stac_pydantic.item import Item
 from pydantic import TypeAdapter
 
-from settings import settings
 from utils import (
     operation_to_partial_item,
     validate_extensions,
@@ -55,41 +53,7 @@ class TransactionClient(BaseTransactionsClient):
     def __init__(self):
         self.producer = KafkaProducer()
 
-    def globus_authorize(
-        self,
-        collection_id: str,
-        item: Item,
-        role: str,
-        request: Request,
-        request_id: str,
-        event_id: str,
-    ) -> Auth:
-        """Auhorise request with Globus Auth
-
-        Args:
-            item (Item): item to check authorization for
-            role (str): role to check authorization for
-            request (Request): current request
-
-        Returns:
-            Auth: Auth object if successful
-        """
-        authorizer: GlobusAuth = request.state.authorizer
-        authorizer.authorize(
-            collection_id=collection_id,
-            item=item,
-            role=role,
-            request_id=request_id,
-            event_id=event_id,
-        )
-
-        logger.info("REQUESTER DATA: %s", authorizer.requester_data)
-
-        return Auth(
-            requester_data=authorizer.requester_data.model_dump(),
-        )
-
-    def egi_authorize(
+    def authorize(
         self,
         collection_id: str,
         item: Item | PartialItem,
@@ -98,7 +62,7 @@ class TransactionClient(BaseTransactionsClient):
         request_id: str,
         event_id: str,
     ) -> Auth:
-        """Auhorise request with EGI
+        """Authorize request with ESGF Core Utils Authorizer
 
         Args:
             item (Item): item to check authorization for
@@ -122,35 +86,6 @@ class TransactionClient(BaseTransactionsClient):
         return Auth(
             requester_data=authorizer.requester_data.model_dump(),
         )
-
-    def authorize(
-        self,
-        collection_id: str,
-        item: Item | PartialItem,
-        role: str,
-        request: Request,
-        request_id: str,
-        event_id: str,
-    ) -> Auth:
-
-        if settings.authorizer == "globus":
-            return self.globus_authorize(
-                collection_id=collection_id,
-                item=item,
-                role=role,
-                request=request,
-                request_id=request_id,
-                event_id=event_id,
-            )
-        else:
-            return self.egi_authorize(
-                collection_id=collection_id,
-                item=item,
-                role=role,
-                request=request,
-                request_id=request_id,
-                event_id=event_id,
-            )
 
     async def create_item(
         self,
