@@ -21,7 +21,7 @@ class CEDAClientSettings(BaseModel):
     introspection_endpoint: str = (
         "https://aai.egi.eu/auth/realms/egi/protocol/openid-connect/token/introspect"
     )
-    timeout: TimeoutSettings
+    timeout: TimeoutSettings = TimeoutSettings()
 
     regex: str = (
         r"urn\:mace\:egi\.eu\:group\:esgf.vo.egi.eu\:(?P<type>[^:]*)\:(?P<id>[^:]*)"
