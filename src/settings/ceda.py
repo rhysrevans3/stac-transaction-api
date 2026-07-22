@@ -1,6 +1,15 @@
 from pydantic import BaseModel
 
 
+class TimeoutSettings(BaseModel):
+    """
+    Timeout settings
+    """
+
+    connect: float = 5.0
+    read: float = 15.0
+
+
 class CEDAClientSettings(BaseModel):
     """
     CEDA settings
@@ -12,7 +21,7 @@ class CEDAClientSettings(BaseModel):
     introspection_endpoint: str = (
         "https://aai.egi.eu/auth/realms/egi/protocol/openid-connect/token/introspect"
     )
-    timeout: float = 5.0
+    timeout: TimeoutSettings
 
     regex: str = (
         r"urn\:mace\:egi\.eu\:group\:esgf.vo.egi.eu\:(?P<type>[^:]*)\:(?P<id>[^:]*)"

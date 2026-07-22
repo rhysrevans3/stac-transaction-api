@@ -41,7 +41,11 @@ class EGIAuthorizer(BaseHTTPMiddleware):
         )
 
         async with httpx.AsyncClient(
-            timeout=settings.client.timeout, verify=False
+            timeout=httpx.Timeout(
+                connect=settings.timeout.connect,
+                read=settings.timeout.read,
+            ),
+            verify=False,
         ) as client:
             logger.debug(
                 "Post request to %s",
