@@ -89,7 +89,7 @@ class EGIAuthorizer(BaseHTTPMiddleware):
             ),
         )
 
-        authorizer.add(token_info["entitlements"])
+        authorizer.add(token_info.get("entitlements", []))
 
         request.state.authorizer = authorizer
 
