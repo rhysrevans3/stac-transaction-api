@@ -58,7 +58,7 @@ def operation_to_partial_item(collection_id: str, operations: list[PatchOperatio
             path_parts = operation.path.lstrip("/").split("/")
 
             if isinstance(path_parts[-1], int) or path_parts[-1] == "-":
-                path_parts.remove(-1)
+                path_parts.pop()
                 nest = [operation.value]
 
             else:
