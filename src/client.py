@@ -46,7 +46,7 @@ from utils import (
 logger = logging.getLogger("uvicorn.error")
 logger.setLevel(logging.DEBUG)
 
-patch_adapter = TypeAdapter(list[PatchOperation] | PartialItem)
+patch_adapter = TypeAdapter(PartialItem | list[PatchOperation])
 
 
 class TransactionClient(BaseTransactionsClient):
@@ -278,7 +278,7 @@ class TransactionClient(BaseTransactionsClient):
         self,
         collection_id: str,
         item_id: str,
-        patch: list[PatchOperation] | PartialItem,
+        patch: PartialItem | list[PatchOperation],
         request: Request,
     ) -> Item | Response | None:
         logger.info("PATCH REQUEST: %s", patch)
