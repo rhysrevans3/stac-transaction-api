@@ -55,7 +55,7 @@ DEFAULT_EXTENSIONS = {
             "regex": [
                 r"https://esgf\.github\.io/stac-transaction-api/cmip7/v[0-9]\.[0-9]\.[0-9]/schema\.json"
             ],
-            "default": "https://esgf.github.io/stac-transaction-api/cmip7/v1.2.9/schema.json",
+            "default": "https://esgf.github.io/stac-transaction-api/cmip7/v1.2.8/schema.json",
         },
         "alternate_assets": {
             "regex": [
