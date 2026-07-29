@@ -26,6 +26,13 @@ from esgf_core_utils.models.kafka.events import (
     RequesterData,
 )
 from esgf_core_utils.models.kafka.producer import KafkaProducer
+from esgf_core_utils.models.validation import (
+    evaluate_patch,
+    operation_to_partial_item,
+    validate_extensions,
+    validate_patch,
+    validate_post,
+)
 from fastapi import Request, Response, status
 from pydantic import TypeAdapter
 from stac_fastapi.extensions.transaction import BaseTransactionsClient
@@ -34,12 +41,6 @@ from stac_fastapi.types.stac import Collection
 from stac_pydantic.item import Item
 
 from settings import settings
-from utils import (
-    operation_to_partial_item,
-    validate_extensions,
-    validate_patch,
-    validate_post,
-)
 
 # Setup logger
 # logger = logging.getLogger(__name__)
@@ -294,10 +295,12 @@ class TransactionClient(BaseTransactionsClient):
         event_id = uuid.uuid4().hex
         request_id = headers.get("X-Request-ID", uuid.uuid4().hex)
 
+        role = evaluate_patch(patch)
+
         auth = self.authorize(
             collection_id=collection_id,
             item=item,
-            role="UPDATE",
+            role=role,
             request=request,
             request_id=request_id,
             event_id=event_id,
