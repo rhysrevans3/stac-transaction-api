@@ -9,7 +9,7 @@ authors = [
     ]
 readme = "README.md"
 dependencies = [
-    "esgf-core-utils>=1.1.0",
+    # "esgf-core-utils>=1.1.0",
     "fastapi>=0.114.0",
     "jsonschema>=4.24.0",
     "packaging>=26.2",
