@@ -28,12 +28,12 @@ from esgf_core_utils.models.kafka.producer import KafkaProducer
 from esgf_core_utils.models.validation import (
     evaluate_patch,
     operation_to_partial_item,
+    patch_adapter,
     validate_extensions,
     validate_patch,
     validate_post,
 )
 from fastapi import Request, Response, status
-from pydantic import TypeAdapter
 from stac_fastapi.extensions.transaction import BaseTransactionsClient
 from stac_fastapi.extensions.transaction.request import PartialItem, PatchOperation
 from stac_fastapi.types.stac import Collection
@@ -43,8 +43,6 @@ from stac_pydantic.item import Item
 # logger = logging.getLogger(__name__)
 logger = logging.getLogger("uvicorn.error")
 logger.setLevel(logging.DEBUG)
-
-patch_adapter = TypeAdapter(PartialItem | list[PatchOperation])
 
 
 class TransactionClient(BaseTransactionsClient):
@@ -112,9 +110,12 @@ class TransactionClient(BaseTransactionsClient):
         except MissingPermissionException as exc:
             raise AuthorizationException(instance=f"{request_id}:{event_id}") from exc
 
-        item_extensions = item.stac_extensions if item.stac_extensions else []
         try:
-            item_extensions = validate_extensions(collection_id=collection_id, item_extensions=item_extensions)
+            item_extensions = validate_extensions(
+                collection_id=collection_id,
+                item_extensions=item.stac_extensions or [],
+            )
+
             validate_post(
                 item_id=item.id,
                 item=item,
@@ -202,6 +203,8 @@ class TransactionClient(BaseTransactionsClient):
 
         role = evaluate_patch(patch)
 
+        logger.debug("PATCH ROLE: %s", role)
+
         auth = self.authorize(
             collection_id=collection_id,
             item=item,
@@ -238,16 +241,11 @@ class TransactionClient(BaseTransactionsClient):
 
         user_agent = headers.get("user-agent", "/").split("/")
 
-        if isinstance(patch, list):
-            patch_body = [op.model_dump() for op in patch]
-        else:
-            patch_body = item.model_dump()
-
         payload = PatchPayload(
             method="PATCH",
             collection_id=collection_id,
             item_id=item_id,
-            patch=patch_body,
+            patch=patch_adapter.dump_python(patch),
         )
 
         data = Data(type="STAC", payload=payload)
