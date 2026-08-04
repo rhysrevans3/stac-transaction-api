@@ -219,6 +219,8 @@ class TransactionClient(BaseTransactionsClient):
             UnexpectedExtensionException,
             ExtensionBelowMinimumException,
         ) as exc:
+            logger.error("Error producing message for %s: %s", item.id, exc)
+            logger.error("Item model dump: %s", item.model_dump_json())
             rfc_exc = RFC9457Exception()
             rfc_exc.status_code = 400
             rfc_exc.type = exc.type

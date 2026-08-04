@@ -55,13 +55,17 @@ class EGIAuthorizer(BaseHTTPMiddleware):
             if token := request.headers.get("authorization", "").removeprefix(
                 "Bearer "
             ):
-                response = await client.post(
-                    settings.client.introspection_endpoint,
-                    headers={"Content-type": "application/x-www-form-urlencoded"},
-                    data=f"token={token}",
-                    auth=auth,
-                )
-                response.raise_for_status()
+                try:
+                    response = await client.post(
+                        settings.client.introspection_endpoint,
+                        headers={"Content-type": "application/x-www-form-urlencoded"},
+                        data=f"token={token}",
+                        auth=auth,
+                    )
+                    response.raise_for_status()
+
+                except httpx.HTTPError as exc:
+                    raise HTTPException(status_code=401) from exc
 
             else:
                 raise HTTPException(
