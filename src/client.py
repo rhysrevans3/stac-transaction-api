@@ -23,7 +23,6 @@ from esgf_core_utils.models.kafka.events import (
     Metadata,
     PatchPayload,
     Publisher,
-    RequesterData,
 )
 from esgf_core_utils.models.kafka.producer import KafkaProducer
 from esgf_core_utils.models.validation import (
@@ -55,69 +54,7 @@ class TransactionClient(BaseTransactionsClient):
     def __init__(self):
         self.producer = KafkaProducer()
 
-    def allowed_groups(self, properties, acp) -> list:
-        if isinstance(acp, list):
-            return acp
-        for facet, subpolicy in acp.items():
-            if hasattr(properties, facet):
-                property_value = getattr(properties, facet)
-                if isinstance(property_value, str):
-                    property_value = [property_value]
-                matches = list(set(property_value) & set(subpolicy.keys()))
-                for match in matches:
-                    groups = self.allowed_groups(properties, subpolicy[match])
-                    if groups:
-                        return groups
-        return []
-
-    def globus_authorize(
-        self, item: Item, request: Request, collection_id: str
-    ) -> dict:
-        properties = item.properties
-
-        if item.collection != collection_id:
-            raise ValueError("Item collection must match path collection_id")
-        if getattr(properties, "project", None) != collection_id:
-            raise ValueError("Item project must match path collection_id")
-
-        allowed_groups = self.allowed_groups(
-            properties, settings.client.access_control_policy
-        )
-        allowed_groups_uuid = [g.get("uuid") for g in allowed_groups]
-
-        authorizer = request.state.authorizer
-        token_info = authorizer.get("token_info")
-        user_groups = authorizer.get("groups")
-
-        authorized_identities = []
-        for group in user_groups:
-            if group.get("group_id") in allowed_groups_uuid:
-                authorized_identities.append(
-                    {
-                        "group_id": group.get("group_id"),
-                        "identity_id": group.get("identity_id"),
-                    }
-                )
-        if not authorized_identities:
-            raise MissingPermissionException(
-                permission_type="globus", target=collection_id
-            )
-
-        requester_data = RequesterData(
-            client_id=token_info.get("client_id"),
-            sub=token_info.get("sub"),
-            iss=token_info.get("iss"),
-        )
-
-        logger.info("REQUESTER DATA: %s", requester_data)
-
-        auth = Auth(
-            requester_data=requester_data,
-        )
-
-        return auth
-
-    def egi_authorize(
+    def authorize(
         self,
         collection_id: str,
         item: Item | PartialItem,
@@ -126,7 +63,7 @@ class TransactionClient(BaseTransactionsClient):
         request_id: str,
         event_id: str,
     ) -> Auth:
-        """Auhorise request with EGI
+        """Authorize request with ESGF Core Utils Authorizer
 
         Args:
             item (Item): item to check authorization for
@@ -150,30 +87,6 @@ class TransactionClient(BaseTransactionsClient):
         return Auth(
             requester_data=authorizer.requester_data.model_dump(),
         )
-
-    def authorize(
-        self,
-        collection_id: str,
-        item: Item | PartialItem,
-        role: str,
-        request: Request,
-        request_id: str,
-        event_id: str,
-    ) -> Auth:
-
-        if settings.authorizer == "globus":
-            return self.globus_authorize(
-                collection_id=collection_id, item=item, request=request
-            )
-        else:
-            return self.egi_authorize(
-                collection_id=collection_id,
-                item=item,
-                role=role,
-                request=request,
-                request_id=request_id,
-                event_id=event_id,
-            )
 
     async def create_item(
         self,
@@ -337,11 +250,16 @@ class TransactionClient(BaseTransactionsClient):
 
         user_agent = headers.get("user-agent", "/").split("/")
 
+        if isinstance(patch, list):
+            patch_body = [op.model_dump() for op in patch]
+        else:
+            patch_body = item.model_dump()
+
         payload = PatchPayload(
             method="PATCH",
             collection_id=collection_id,
             item_id=item_id,
-            patch=patch_adapter.dump_python(patch),
+            patch=patch_body,
         )
 
         data = Data(type="STAC", payload=payload)

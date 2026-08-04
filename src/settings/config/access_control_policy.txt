@@ -1,0 +1,10 @@
+project:*:role=CREATE:group:e3329078-b8f6-11f0-9fdd-0e7d9e9fc9e3
+project:*:role=UPDATE:group:e3329078-b8f6-11f0-9fdd-0e7d9e9fc9e3
+project:*:role=REPLICATE:group:e3329078-b8f6-11f0-9fdd-0e7d9e9fc9e3
+project:*:role=DELETE:group:e3329078-b8f6-11f0-9fdd-0e7d9e9fc9e3
+project:*:role=REVOKE:group:e3329078-b8f6-11f0-9fdd-0e7d9e9fc9e3
+node:*:role=CREATE:group:e3329078-b8f6-11f0-9fdd-0e7d9e9fc9e3
+node:*:role=UPDATE:group:e3329078-b8f6-11f0-9fdd-0e7d9e9fc9e3
+node:*:role=REPLICATE:group:e3329078-b8f6-11f0-9fdd-0e7d9e9fc9e3
+node:*:role=DELETE:group:e3329078-b8f6-11f0-9fdd-0e7d9e9fc9e3
+node:*:role=REVOKE:group:e3329078-b8f6-11f0-9fdd-0e7d9e9fc9e3
