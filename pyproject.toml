@@ -10,6 +10,7 @@ authors = [
 readme = "README.md"
 dependencies = [
     # "esgf-core-utils>=1.2.0",
+    "esgf-core-utils@git+https://github.com/ESGF/esgf-core-utils@refs/pull/81/head",
     "fastapi>=0.114.0",
     "jsonschema>=4.24.0",
     "packaging>=26.2",

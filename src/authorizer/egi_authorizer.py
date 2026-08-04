@@ -52,9 +52,7 @@ class EGIAuthorizer(BaseHTTPMiddleware):
                 "Post request to %s",
                 settings.client.introspection_endpoint,
             )
-            if token := request.headers.get("authorization", "").removeprefix(
-                "Bearer "
-            ):
+            if token := request.headers.get("authorization", "").removeprefix("Bearer "):
                 try:
                     response = await client.post(
                         settings.client.introspection_endpoint,
@@ -68,17 +66,13 @@ class EGIAuthorizer(BaseHTTPMiddleware):
                     raise HTTPException(status_code=401) from exc
 
             else:
-                raise HTTPException(
-                    status_code=401, detail="Missing or invalid bearer token"
-                )
+                raise HTTPException(status_code=401, detail="Missing or invalid bearer token")
 
         token_info = response.json()
 
         logger.debug("Token info: %s", token_info)
 
-        if request.headers["host"] not in [
-            urlparse(aud).hostname for aud in token_info["aud"]
-        ]:
+        if request.headers["host"] not in [urlparse(aud).hostname for aud in token_info["aud"]]:
             raise InvalidTokenAudienceException(
                 token_audience=request.headers["host"],
                 expected_audience=", ".join(token_info["aud"]),

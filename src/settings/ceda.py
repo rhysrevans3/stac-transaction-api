@@ -18,9 +18,7 @@ class CEDAClientSettings(BaseModel):
     client_id: str
     client_secret: str
     token_url: str = "https://aai.egi.eu/auth/realms/egi/protocol/openid-connect/token"
-    introspection_endpoint: str = (
-        "https://aai.egi.eu/auth/realms/egi/protocol/openid-connect/token/introspect"
-    )
+    introspection_endpoint: str = "https://aai.egi.eu/auth/realms/egi/protocol/openid-connect/token/introspect"
     timeout: TimeoutSettings = TimeoutSettings()
 
     regex: str = (

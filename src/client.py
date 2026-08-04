@@ -39,8 +39,6 @@ from stac_fastapi.extensions.transaction.request import PartialItem, PatchOperat
 from stac_fastapi.types.stac import Collection
 from stac_pydantic.item import Item
 
-from settings import settings
-
 # Setup logger
 # logger = logging.getLogger(__name__)
 logger = logging.getLogger("uvicorn.error")
@@ -116,9 +114,7 @@ class TransactionClient(BaseTransactionsClient):
 
         item_extensions = item.stac_extensions if item.stac_extensions else []
         try:
-            item_extensions = validate_extensions(
-                collection_id=collection_id, item_extensions=item_extensions
-            )
+            item_extensions = validate_extensions(collection_id=collection_id, item_extensions=item_extensions)
             validate_post(
                 item_id=item.id,
                 item=item,
@@ -152,9 +148,7 @@ class TransactionClient(BaseTransactionsClient):
 
         data = Data(type="STAC", payload=payload)
 
-        publisher = Publisher(
-            package=user_agent[0], version=user_agent[1] if len(user_agent) > 1 else ""
-        )
+        publisher = Publisher(package=user_agent[0], version=user_agent[1] if len(user_agent) > 1 else "")
 
         metadata = Metadata(
             auth=auth,
@@ -199,11 +193,7 @@ class TransactionClient(BaseTransactionsClient):
     ) -> Item | Response | None:
         logger.info("PATCH REQUEST: %s", patch)
 
-        item = (
-            operation_to_partial_item(collection_id=collection_id, operations=patch)
-            if isinstance(patch, list)
-            else patch
-        )
+        item = operation_to_partial_item(collection_id=collection_id, operations=patch) if isinstance(patch, list) else patch
 
         headers = request.headers.get("headers", {})
 
@@ -224,9 +214,7 @@ class TransactionClient(BaseTransactionsClient):
         item_extensions = item.stac_extensions if item.stac_extensions else []
         try:
 
-            item_extensions = validate_extensions(
-                collection_id=collection_id, item_extensions=item_extensions
-            )
+            item_extensions = validate_extensions(collection_id=collection_id, item_extensions=item_extensions)
 
             validate_patch(
                 item_id=item_id,
@@ -264,9 +252,7 @@ class TransactionClient(BaseTransactionsClient):
 
         data = Data(type="STAC", payload=payload)
 
-        publisher = Publisher(
-            package=user_agent[0], version=user_agent[1] if len(user_agent) > 1 else ""
-        )
+        publisher = Publisher(package=user_agent[0], version=user_agent[1] if len(user_agent) > 1 else "")
         metadata = Metadata(
             auth=auth,
             event_id=event_id,
