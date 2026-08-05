@@ -168,7 +168,8 @@ class TransactionClient(BaseTransactionsClient):
             )
 
         except Exception as exc:
-            logger.error("Error producing message: %s", exc)
+            logger.error("Error producing message for %s: %s", item.id, exc)
+            logger.error("Item model dump: %s", item.model_dump_json())
             raise UnknownException(instance=f"{request_id}:{event_id}") from exc
 
         return Response(
