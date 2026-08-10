@@ -131,13 +131,8 @@ class TransactionClient(BaseTransactionsClient):
         ) as exc:
             logger.error("Error producing message for %s: %s", item.id, exc)
             logger.error("Item model dump: %s", item.model_dump_json())
-            rfc_exc = RFC9457Exception()
-            rfc_exc.status_code = 400
-            rfc_exc.type = exc.type
-            rfc_exc.title = exc.title
-            rfc_exc.detail = exc.detail
-            rfc_exc.instance = f"{request_id}:{event_id}"
-            raise rfc_exc from exc
+            exc.instance = f"{request_id}:{event_id}"
+            raise
 
         user_agent = headers.get("user-agent", "/").split("/")
 
@@ -149,7 +144,9 @@ class TransactionClient(BaseTransactionsClient):
 
         data = Data(type="STAC", payload=payload)
 
-        publisher = Publisher(package=user_agent[0], version=user_agent[1] if len(user_agent) > 1 else "")
+        publisher = Publisher(
+            package=user_agent[0], version=user_agent[1] if len(user_agent) > 1 else ""
+        )
 
         metadata = Metadata(
             auth=auth,
@@ -195,7 +192,11 @@ class TransactionClient(BaseTransactionsClient):
     ) -> Item | Response | None:
         logger.info("PATCH REQUEST: %s", patch)
 
-        item = operation_to_partial_item(collection_id=collection_id, operations=patch) if isinstance(patch, list) else patch
+        item = (
+            operation_to_partial_item(collection_id=collection_id, operations=patch)
+            if isinstance(patch, list)
+            else patch
+        )
 
         headers = request.headers.get("headers", {})
 
@@ -218,7 +219,9 @@ class TransactionClient(BaseTransactionsClient):
         item_extensions = item.stac_extensions if item.stac_extensions else []
         try:
 
-            item_extensions = validate_extensions(collection_id=collection_id, item_extensions=item_extensions)
+            item_extensions = validate_extensions(
+                collection_id=collection_id, item_extensions=item_extensions
+            )
 
             validate_patch(
                 item_id=item_id,
@@ -232,13 +235,8 @@ class TransactionClient(BaseTransactionsClient):
             UnexpectedExtensionException,
             ExtensionBelowMinimumException,
         ) as exc:
-            rfc_exc = RFC9457Exception()
-            rfc_exc.status_code = 400
-            rfc_exc.type = exc.type
-            rfc_exc.title = exc.title
-            rfc_exc.detail = exc.detail
-            rfc_exc.instance = f"{request_id}:{event_id}"
-            raise rfc_exc from exc
+            exc.instance = f"{request_id}:{event_id}"
+            raise
 
         user_agent = headers.get("user-agent", "/").split("/")
 
@@ -251,7 +249,9 @@ class TransactionClient(BaseTransactionsClient):
 
         data = Data(type="STAC", payload=payload)
 
-        publisher = Publisher(package=user_agent[0], version=user_agent[1] if len(user_agent) > 1 else "")
+        publisher = Publisher(
+            package=user_agent[0], version=user_agent[1] if len(user_agent) > 1 else ""
+        )
         metadata = Metadata(
             auth=auth,
             event_id=event_id,
